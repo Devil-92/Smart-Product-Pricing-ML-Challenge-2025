@@ -1,0 +1,182 @@
+
+
+# **SMART PRODUCT PRICING — PERFORMANCE-OPTIMIZED ROADMAP **
+
+SMART PRODUCT PRICING – PERFORMANCE-OPTIMIZED ROADMAP
+Objective: Achieve SMAPE < 40 through a structured modelling and optimization workflow.
+
+---
+
+PHASE 1: DATA UNDERSTANDING AND EXPLORATION
+
+1. Dataset Profiling
+
+   * Load train.csv and test.csv.
+   * Inspect data types, missing values, outliers, and distributions.
+   * Apply log-transform to the target variable to reduce variance:
+     df["log_price"] = np.log1p(df["price"])
+
+2. Text Structure Analysis
+
+   * Parse catalog_content into structured fields: title, description, bullet points.
+   * Extract analytical metrics such as text length (characters, words), unique token counts, keyword indicators (brand, quantity).
+   * Identify low-information or missing text fields.
+   * Evaluate correlation between text attributes and log-price.
+
+3. Image Exploration
+
+   * Sample 50–100 product images for inspection.
+   * Extract image quality metrics: resolution, brightness, entropy, aspect ratio.
+   * Identify missing or corrupted images.
+   * Label low-quality images for downstream processing.
+
+---
+
+PHASE 2: FEATURE ENGINEERING
+
+4. Text Feature Engineering
+   Structured Features:
+
+   * Standardize brand, quantity, and category fields.
+   * Create indicator variables: presence of brand, presence of quantity, presence of premium terms.
+
+   Linguistic Features:
+
+   * Title length, description length, ratio of title to description.
+   * Readability measures and average word length.
+
+   High-Dimensional Text Features:
+
+   * TF-IDF with dimensionality reduction (SVD ≈ 100 components).
+   * Sentence embeddings using SentenceTransformers (e.g., MiniLM).
+     These typically improve SMAPE by 5–10 points.
+
+5. Image Feature Engineering
+
+   * Extract image embeddings using EfficientNet or CLIP Vision Transformer.
+   * Reduce embedding dimensionality using PCA (64–128 components).
+   * Compute text-image embedding similarity scores.
+   * Extract image-level metrics: entropy, contrast, dominant color.
+   * Construct indicators for image presence and image quality.
+     Image-related features generally improve SMAPE by 5–8 points.
+
+6. Cross-Modal Fusion Features
+
+   * Compute text-image coherence using cosine similarity.
+   * Generate interaction vectors such as elementwise multiplication and subtraction between text and image embeddings.
+   * Concatenate structured, text, and image feature sets.
+
+---
+
+PHASE 3: MODEL DEVELOPMENT
+
+7. Baseline Models
+
+   * Train LightGBM using structured and text features.
+   * Target = log_price.
+   * Use GroupKFold (grouped by brand or category).
+   * Baseline SMAPE ~55–58.
+
+8. Model Variants
+
+   * XGBoost: structured + text.
+   * CatBoost: strong categorical feature handling.
+   * Ridge/Lasso: linear benchmark using TF-IDF features.
+   * MLP: nonlinear combination of text embeddings.
+   * ViT/EfficientNet: image-only baselines.
+
+9. Fusion Models
+
+   * Early Fusion: concatenate all features and train an MLP.
+   * Intermediate Fusion: transformer-based cross-attention for text-image alignment.
+   * Late Fusion: ensemble of text-only, image-only, and fusion models.
+     Fusion approaches typically reduce SMAPE to approximately 45–48.
+
+---
+
+PHASE 4: MODEL OPTIMIZATION
+
+10. Hyperparameter Optimization (Optuna)
+    Example search space:
+    num_leaves (20–150), learning_rate (0.005–0.05 log scale),
+    feature_fraction (0.5–0.9), bagging_fraction (0.5–0.9),
+    lambda_l1 and lambda_l2 (0–10), objective = regression_l1.
+    Typically improves SMAPE by 3–4 points.
+
+11. Cross-Validation Strategy
+
+    * Use GroupKFold to minimize data leakage.
+    * Track fold-wise SMAPE variance; target < 2 percent variability.
+
+12. Regularization and Loss Adjustments
+
+    * Experiment with MAE/Huber losses.
+    * Apply dropout or feature subsampling (feature_fraction ≈ 0.7).
+    * Use multiple random seeds for robust averaging.
+      Typical improvement: 1–2 SMAPE points.
+
+---
+
+PHASE 5: ENSEMBLING AND STACKING
+
+13. Weighted Model Blending
+    Example:
+    final_pred = 0.4 * lightgbm + 0.3 * xgboost + 0.2 * catboost + 0.1 * fusion
+
+14. Stacked Generalization
+
+    * Generate out-of-fold predictions for all models.
+    * Train a LightGBM meta-model on OOF predictions.
+
+15. Dynamic Ensemble Weighting
+    Adjust weights based on predicted price range:
+
+    * Low (<200): 70 percent text, 30 percent fusion
+    * Medium (200–1000): 50 percent text, 50 percent fusion
+    * High (>1000): 60 percent image, 40 percent fusion
+      Potential improvement: 5–10 SMAPE points.
+
+---
+
+PHASE 6: VALIDATION AND ERROR ANALYSIS
+
+16. SMAPE Evaluation
+    Use the standard SMAPE formula:
+    smape = 200 * abs(pred - true) / (abs(pred) + abs(true))
+
+    * Evaluate across price bins, categories, and brands.
+    * Identify systematic over- or under-estimation segments.
+
+17. Weak Segment Identification
+
+    * Missing or low-quality text: rely more on image and structured features.
+    * Missing or low-quality images: rely on text embeddings and brand cues.
+    * Outliers: clip predictions to the range [P5, P95].
+
+---
+
+PHASE 7: FINAL SUBMISSION PIPELINE
+
+18. Inference on Test Data
+
+    * Run ensemble inference and compute predictions.
+    * Apply inverse log-transform: preds = np.expm1(final_preds)
+    * Clip predictions to observed training price range.
+
+19. Deliverables
+
+    * submission.csv
+    * requirements.txt
+    * model_card.md
+    * train.py and predict.py (full pipeline scripts)
+
+---
+
+ECH STACK
+
+Core Machine Learning: PyTorch, LightGBM, XGBoost, CatBoost
+Text Processing: NLTK, spaCy, SentenceTransformers
+Image Processing: timm, OpenCV, torchvision
+Optimization: Optuna
+EDA and Data Handling: pandas, matplotlib, seaborn
+
