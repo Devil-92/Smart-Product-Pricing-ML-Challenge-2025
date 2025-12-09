@@ -1,4 +1,5 @@
 project_name: "Multimodal Price Prediction"
+
 challenge: "ML Challenge 2025 – Smart Product Pricing"
 
 overview: >
@@ -41,9 +42,9 @@ approach:
   ensemble_strategy:
     type: "stacking"
     description: >
-      A meta-model integrates predictions from text-based models,
-      image-based models, and tree ensemble models. This stacking approach
-      improves robustness and reduces SMAPE by leveraging complementary signals.
+      A meta-model integrates predictions from text-based models, image-based models,
+      and tree ensemble models. This stacking approach improves robustness and reduces SMAPE
+      by leveraging complementary signals.
 
 evaluation:
   metric: "SMAPE - Symmetric Mean Absolute Percentage Error"
